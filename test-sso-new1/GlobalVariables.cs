@@ -7,6 +7,8 @@ namespace test_sso_new1
 {
     public static class GlobalVariables
     {
+        private static readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
         private static List<string> _listActiveSession { get; set; }
 
         private static List<SessionItemModel> _listActiveSession2 { get; set; }
@@ -26,6 +28,8 @@ namespace test_sso_new1
 
         public static void InsertSession2(string sub, string email)
         {
+            log.Info($"GlobalVariables.InsertSession2 - sub = {sub}, email = {email}");
+
             if (_listActiveSession2 == null)
             {
                 _listActiveSession2 = new List<SessionItemModel>();
@@ -50,8 +54,10 @@ namespace test_sso_new1
             
         }
 
-        public static void DeleteSession2(string sub, string email)
+        public static void DeleteSession2(string sub, string email = null)
         {
+            log.Info($"GlobalVariables.DeleteSession2 - sub = {sub}, email = {email}");
+
             List<SessionItemModel> listSessionItemModel = new List<SessionItemModel>();
 
             listSessionItemModel = _listActiveSession2?.Where(s => s.Sub.Equals(sub) || s.Email.Equals(email))?.ToList();
@@ -71,11 +77,15 @@ namespace test_sso_new1
 
         public static string FindSubByEmail(string email)
         {
+            log.Info($"GlobalVariables.FindSubByEmail - email = {email}");
+
             return _listActiveSession2?.FirstOrDefault(s => s.Email.Equals(email))?.Sub;
         }
 
         public static bool IsSessionActive(string email)
         {
+            log.Info($"GlobalVariables.IsSessionActive - email = {email}");
+
             return _listActiveSession2.Any(s => s.Email.Equals(email));
         }
     }

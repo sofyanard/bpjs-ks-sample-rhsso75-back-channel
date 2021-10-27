@@ -17,6 +17,7 @@ using System.Net.Http;
 using System.Collections.Generic;
 using IdentityModel;
 using System.Web;
+using System.Text.Json;
 
 [assembly: OwinStartup(typeof(test_sso_new1.App_Start.StartupAuth))]
 
@@ -24,6 +25,8 @@ namespace test_sso_new1.App_Start
 {
     public class StartupAuth
     {
+        private static readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
         // The Client ID is used by the application to uniquely identify itself to Microsoft identity platform.
         string _clientId = System.Configuration.ConfigurationManager.AppSettings["clientId"];
 
@@ -103,6 +106,8 @@ namespace test_sso_new1.App_Start
                         // * mengambil "sub" (user id di sso)
                         // * memasukkan sub ke list active session
 
+                        log.Info("Authentication code received!");
+
                         try
                         {
                             var client = new HttpClient();
@@ -117,7 +122,6 @@ namespace test_sso_new1.App_Start
                                 ClientSecret = _clientSecret,
                             });
 
-                            // var accessToken = response.AccessToken;
                             var idToken = response.IdentityToken;
 
                             var disco = await client.GetDiscoveryDocumentAsync(new DiscoveryDocumentRequest
@@ -186,6 +190,8 @@ namespace test_sso_new1.App_Start
 
             JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
             IdentityModelEventSource.ShowPII = true;
+
+            // log.Info("Hello logging world!");
         }
 
         // Handle failed authentication requests by redirecting the user to the home page with an error in the query string

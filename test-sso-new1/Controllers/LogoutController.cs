@@ -15,6 +15,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Http;
+using Newtonsoft.Json;
 
 namespace test_sso_new1.Controllers
 {
@@ -25,6 +26,13 @@ namespace test_sso_new1.Controllers
         static string _clientId = System.Configuration.ConfigurationManager.AppSettings["clientId"];
         static string _clientSecret = System.Configuration.ConfigurationManager.AppSettings["clientSecret"];
 
+        private static readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
+        public LogoutController()
+        {
+            log.Info("Logout Controller is started!");
+        }
+
         // POST: api/Logout
         public async Task<IHttpActionResult> Post([FromBody] LogoutTokenModel logoutTokenModel)
         {
@@ -32,19 +40,35 @@ namespace test_sso_new1.Controllers
             {
                 string logoutToken = logoutTokenModel.logout_token;
 
+                log.Info("Logout Notification is received!");
+                log.Info($"logout_token : {logoutToken}");
+
+                log.Info("ValidateLogoutToken start");
                 var user = await ValidateLogoutToken(logoutToken);
+                log.Info("ValidateLogoutToken finish");
 
                 // these are the sub & sid to signout
                 var sub = user.FindFirst("sub")?.Value;
+                log.Info($"sub = {sub}");
                 var sid = user.FindFirst("sid")?.Value;
+                log.Info($"sid = {sid}");
 
                 // GlobalVariables.DeleteSession(sub);
-                GlobalVariables.DeleteSession2(sub, null);
+                try
+                {
+                    GlobalVariables.DeleteSession2(sub, null);
+                    log.Info($"LogoutController.GlobalVariables.DeleteSession2 - sub = {sub}");
+                }
+                catch (Exception e)
+                {
+                    log.Info($"GlobalVariables.DeleteSession2 error : {e.Message}");
+                }
 
                 return Ok();
             }
             catch (Exception e)
             {
+                log.Error($"LogoutController.Post error : {e.Message}");
                 return InternalServerError(e);
             }
             
@@ -54,7 +78,9 @@ namespace test_sso_new1.Controllers
         private async Task<ClaimsPrincipal> ValidateLogoutToken(string logout_token)
         {
             // https://ashend.medium.com/openid-connect-backchannel-logout-144a3198d2a
+            log.Info("ValidateJwt start");
             var claims = await ValidateJwt(logout_token);
+            log.Info("ValidateJwt finish");
 
             if (claims.FindFirst("sub") == null && claims.FindFirst("sid") == null) throw new Exception("Invalid logout token");
 
@@ -79,9 +105,28 @@ namespace test_sso_new1.Controllers
         {
             // read discovery document to find issuer and key material
             var client = new HttpClient();
-            var disco = await client.GetDiscoveryDocumentAsync(_authority);
+            log.Info("GetDiscoveryDocumentAsync start");
+            var disco = await client.GetDiscoveryDocumentAsync(new DiscoveryDocumentRequest { 
+                Address = _authority,
+                Policy =
+                    {
+                        RequireHttps = false
+                    }
+            });
+            log.Info("GetDiscoveryDocumentAsync finish");
 
+            try
+            {
+                var discoRslt = JsonConvert.SerializeObject(disco);
+                log.Info($"discoRslt = {discoRslt}");
+            }
+            catch (Exception e)
+            {
+                log.Error($"discoRslt error : {e.Message}");
+            }
+            
             var keys = new List<Microsoft.IdentityModel.Tokens.SecurityKey>();
+            log.Info("keys defined");
             foreach (var webKey in disco.KeySet.Keys)
             {
                 var key = new Microsoft.IdentityModel.Tokens.JsonWebKey()
@@ -97,6 +142,7 @@ namespace test_sso_new1.Controllers
                 };
                 keys.Add(key);
             }
+            log.Info("keys added");
 
             var parameters = new TokenValidationParameters
             {
@@ -110,11 +156,23 @@ namespace test_sso_new1.Controllers
                 TokenReplayCache = null,
                 RequireExpirationTime = false
             };
+            log.Info("parameters set");
 
             var handler = new JwtSecurityTokenHandler();
             handler.InboundClaimTypeMap.Clear();
 
-            var user = handler.ValidateToken(jwt, parameters, out var _);
+            log.Info("handler.ValidateToken start");
+            ClaimsPrincipal user;
+            try
+            {
+                user = handler.ValidateToken(jwt, parameters, out var _);
+            }
+            catch (Exception e)
+            {
+                log.Error($"handler.ValidateToken error : {e.Message}");
+                user = null;
+            }
+            
             return user;
         }
     }

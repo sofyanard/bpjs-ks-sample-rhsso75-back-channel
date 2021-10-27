@@ -1,4 +1,5 @@
 ﻿using Microsoft.Owin.Security;
+using Microsoft.Owin.Security.Cookies;
 using Microsoft.Owin.Security.OpenIdConnect;
 using System;
 using System.Collections.Generic;
@@ -41,10 +42,9 @@ namespace test_sso_new1
                 }
                 else
                 {
-                    if (!this.Page.Request.FilePath.ToLower().Contains("/default"))
-                    {
-                        Response.Redirect("~/Default.aspx");
-                    }
+                    HttpContext.Current.GetOwinContext().Authentication.SignOut(
+                        OpenIdConnectAuthenticationDefaults.AuthenticationType,
+                        CookieAuthenticationDefaults.AuthenticationType);
 
                     Session.Remove("sub");
                     Session.Remove("email");
