@@ -18,6 +18,9 @@ using System.Collections.Generic;
 using IdentityModel;
 using System.Web;
 using System.Text.Json;
+using System.Net;
+using System.Security.Cryptography.X509Certificates;
+using System.Net.Security;
 
 [assembly: OwinStartup(typeof(test_sso_new1.App_Start.StartupAuth))]
 
@@ -47,6 +50,9 @@ namespace test_sso_new1.App_Start
 
         public void Configuration(IAppBuilder app)
         {
+            // WARNING!!! ini buat mengakali error trusted certificate. JANGAN DIPAKAI DI PRODUCTION!!!
+            NEVER_EAT_POISON_Disable_CertificateValidation();
+
             app.SetDefaultSignInAsAuthenticationType(CookieAuthenticationDefaults.AuthenticationType);
 
             app.UseCookieAuthentication(new CookieAuthenticationOptions());
@@ -200,6 +206,23 @@ namespace test_sso_new1.App_Start
             context.HandleResponse();
             context.Response.Redirect("/?errormessage=" + context.Exception.Message);
             return Task.FromResult(0);
+        }
+
+        // WARNING!!! ini buat mengakali error trusted certificate. JANGAN DIPAKAI DI PRODUCTION!!!
+        static void NEVER_EAT_POISON_Disable_CertificateValidation()
+        {
+            // Disabling certificate validation can expose you to a man-in-the-middle attack
+            // which may allow your encrypted message to be read by an attacker
+            // https://stackoverflow.com/a/14907718/740639
+            ServicePointManager.ServerCertificateValidationCallback =
+                delegate (
+                    object s,
+                    X509Certificate certificate,
+                    X509Chain chain,
+                    SslPolicyErrors sslPolicyErrors
+                ) {
+                    return true;
+                };
         }
     }
 

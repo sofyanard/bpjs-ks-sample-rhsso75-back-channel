@@ -79,14 +79,24 @@ namespace test_sso_new1
         {
             log.Info($"GlobalVariables.FindSubByEmail - email = {email}");
 
-            return _listActiveSession2?.FirstOrDefault(s => s.Email.Equals(email))?.Sub;
+            string sub = _listActiveSession2?.FirstOrDefault(s => s.Email.Equals(email))?.Sub;
+
+            log.Info($"GlobalVariables.FindSubByEmail - sub = {sub}");
+
+            // return _listActiveSession2?.FirstOrDefault(s => s.Email.Equals(email))?.Sub;
+            return sub;
         }
 
         public static bool IsSessionActive(string email)
         {
             log.Info($"GlobalVariables.IsSessionActive - email = {email}");
 
-            return _listActiveSession2.Any(s => s.Email.Equals(email));
+            bool status = _listActiveSession2.Any(s => s.Email.Equals(email));
+
+            log.Info($"GlobalVariables.IsSessionActive - status = {status.ToString()}");
+
+            // return _listActiveSession2.Any(s => s.Email.Equals(email));
+            return status;
         }
     }
 }
